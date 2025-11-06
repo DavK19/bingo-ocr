@@ -9,6 +9,8 @@ import logging
 from datetime import datetime
 import traceback
 import sys
+import pytesseract
+import subprocess
 
 # Configurar logging
 logging.basicConfig(
@@ -19,6 +21,55 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Configurar Tesseract automáticamente
+def configure_tesseract():
+    """Detecta y configura Tesseract en diferentes entornos"""
+    tesseract_paths = [
+        '/usr/bin/tesseract',  # Linux/Railway
+        '/usr/local/bin/tesseract',  # Linux alternativo
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe',  # Windows
+        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',  # Windows 32-bit
+        '/opt/homebrew/bin/tesseract',  # macOS M1
+        '/usr/local/Cellar/tesseract',  # macOS Intel
+    ]
+    
+    # Intentar encontrar tesseract en PATH primero
+    try:
+        result = subprocess.run(['tesseract', '--version'], 
+                              capture_output=True, 
+                              text=True, 
+                              timeout=5)
+        if result.returncode == 0:
+            logger.info(f"✅ Tesseract encontrado en PATH")
+            logger.info(f"  Version: {result.stdout.split()[1] if result.stdout else 'unknown'}")
+            return True
+    except Exception as e:
+        logger.warning(f"Tesseract no encontrado en PATH: {e}")
+    
+    # Buscar en rutas comunes
+    for path in tesseract_paths:
+        if os.path.exists(path):
+            pytesseract.pytesseract.tesseract_cmd = path
+            logger.info(f"✅ Tesseract configurado en: {path}")
+            try:
+                result = subprocess.run([path, '--version'], 
+                                      capture_output=True, 
+                                      text=True, 
+                                      timeout=5)
+                logger.info(f"  Version: {result.stdout.split()[1] if result.stdout else 'unknown'}")
+            except:
+                pass
+            return True
+    
+    logger.error("❌ Tesseract no encontrado en ninguna ruta común")
+    logger.error("  Rutas buscadas:")
+    for path in tesseract_paths:
+        logger.error(f"    - {path}")
+    return False
+
+# Configurar Tesseract al iniciar
+tesseract_available = configure_tesseract()
 
 app = FastAPI(
     title="Bingo OCR API",
@@ -98,8 +149,15 @@ async def startup_event():
     logger.info(f"  Port: {os.getenv('PORT', '8000')}")
     logger.info(f"  CORS Origins: {origins}")
     logger.info(f"  Python: {sys.version}")
+    logger.info(f"  Tesseract: {'✅ Available' if tesseract_available else '❌ NOT FOUND'}")
+    if tesseract_available:
+        logger.info(f"    Path: {pytesseract.pytesseract.tesseract_cmd}")
     logger.info("=" * 50)
-    logger.info("✅ API READY TO ACCEPT REQUESTS")
+    if tesseract_available:
+        logger.info("✅ API READY TO ACCEPT REQUESTS")
+    else:
+        logger.warning("⚠️ API STARTED BUT TESSERACT NOT AVAILABLE")
+        logger.warning("   OCR requests will fail until Tesseract is installed")
     logger.info("=" * 50)
 
 @app.on_event("shutdown")
@@ -128,12 +186,21 @@ async def root(request: Request):
 async def health_check(request: Request):
     logger.info("❤️ Health check endpoint accessed")
     logger.info(f"  Origin: {request.headers.get('origin', 'NO ORIGIN')}")
+    
+    # Verificar estado de Tesseract
+    tesseract_status = "available" if tesseract_available else "not_found"
+    tesseract_path = pytesseract.pytesseract.tesseract_cmd if tesseract_available else None
+    
     health_data = {
-        "status": "healthy",
+        "status": "healthy" if tesseract_available else "degraded",
         "service": "bingo-ocr-api",
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
-        "environment": os.getenv("ENVIRONMENT", "development")
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "tesseract": {
+            "status": tesseract_status,
+            "path": tesseract_path
+        }
     }
     logger.info(f"  Response: {health_data}")
     return health_data
@@ -167,6 +234,15 @@ async def process_bingo_card(
     logger.info(f"  Grid size: {rows}x{cols}")
     logger.info(f"  Save grid: {save_grid}")
     logger.info(f"  Origin: {request.headers.get('origin', 'NO ORIGIN')}")
+    logger.info(f"  Tesseract available: {tesseract_available}")
+    
+    # Verificar que Tesseract está disponible
+    if not tesseract_available:
+        logger.error(f"❌ [{request_id}] Tesseract not available")
+        raise HTTPException(
+            status_code=503,
+            detail="Tesseract OCR no está disponible. Contacta al administrador del sistema."
+        )
     
     # Validar tipo de archivo
     allowed_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']
