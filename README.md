@@ -1,55 +1,88 @@
-# Bingo OCR Project
 
-## Overview
-This project is designed to read and process images of bingo cards using Optical Character Recognition (OCR). It divides the bingo card into a 5x5 grid, processes each cell, and extracts the numbers using Tesseract OCR.
+# Bingo OCR API
 
-## Project Structure
-```
-bingo-ocr
-├── src
-│   ├── main.py          # Entry point for the application
-│   ├── processor.py     # Handles image processing and grid division
-│   ├── ocr.py           # Contains OCR-related functions
-│   ├── preproc.py       # Preprocessing functions for image enhancement
-│   └── utils.py         # Utility functions for various tasks
-├── tests
-│   └── test_processor.py # Unit tests for processor functions
-├── requirements.txt      # Project dependencies
-├── .gitignore            # Files and directories to ignore in Git
-└── README.md             # Project documentation
-```
+API para extraer números de cartones de bingo usando OCR (Optical Character Recognition).
 
-## Installation
-To set up the project, follow these steps:
+## 🚀 Características
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd bingo-ocr
-   ```
+- Extracción automática de números de cartones de bingo
+- API REST con FastAPI
+- Documentación automática con Swagger
+- Soporte para múltiples formatos de imagen
+- Desplegable en Railway
 
-2. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+## 📋 Requisitos
 
-3. Ensure that Tesseract OCR is installed on your system. You can download it from [Tesseract's official repository](https://github.com/tesseract-ocr/tesseract).
+- Python 3.9+
+- Tesseract OCR
 
-## Usage
-To run the application, execute the following command:
-```
-python src/main.py <path_to_bingo_card_image>
-```
-Replace `<path_to_bingo_card_image>` with the path to your bingo card image file.
+## 🛠️ Instalación Local
 
-## Testing
-To run the unit tests, navigate to the `tests` directory and execute:
-```
-pytest test_processor.py
+1. Clonar el repositorio:
+
+```bash
+git clone <tu-repo>
+cd bingo-ocr
 ```
 
-## Contributing
-Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
+2. Crear entorno virtual:
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for more details.
+```bash
+python -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
+```
+
+3. Instalar dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Instalar Tesseract:
+   - **Windows**: Descargar de [GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
+   - **Linux**: `sudo apt-get install tesseract-ocr`
+   - **macOS**: `brew install tesseract`
+
+## 🚀 Uso
+
+### Ejecutar localmente:
+
+```bash
+uvicorn src.api:app --reload --port 8000
+```
+
+Visita `http://localhost:8000/docs` para la documentación interactiva.
+
+### Ejemplo de request:
+
+```bash
+curl -X POST "http://localhost:8000/process" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@carton.png" \
+  -F "rows=5" \
+  -F "cols=5"
+```
+
+## 📦 Deploy en Railway
+
+1. Conecta tu repositorio a Railway
+2. Railway detectará automáticamente el `nixpacks.toml`
+3. El servicio se desplegará automáticamente
+
+## 📚 Endpoints
+
+- `GET /` - Información de la API
+- `GET /health` - Estado del servicio
+- `POST /process` - Procesar imagen de cartón
+- `GET /docs` - Documentación Swagger
+- `GET /redoc` - Documentación ReDoc
+
+## 🧪 Testing
+
+```bash
+pytest tests/
+```
+
+## 📄 Licencia
+
+MIT

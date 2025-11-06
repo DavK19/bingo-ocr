@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 import pytesseract
-from preproc import preprocess_image
+from .preproc import preprocess_image
 
 
 def process_image(image_path, grid=(5, 5), save_grid_path=None):
