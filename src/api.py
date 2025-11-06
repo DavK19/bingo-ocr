@@ -12,6 +12,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Next.js local
+        "http://localhost:3001",  # Alternativo
+        "https://tu-frontend.vercel.app",  # Tu dominio de producción
+        "*"  # ⚠️ Solo para desarrollo, en producción especifica dominios
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Permite GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],  # Permite todos los headers
+)
+
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
