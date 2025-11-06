@@ -8,6 +8,7 @@
     <a href="#spec-api">Especificación API</a> ·
     <a href="#quickstart">Quickstart</a> ·
     <a href="#integracion-frontend">Integración Frontend</a> ·
+    <a href="#debugging">Debugging</a> ·
     <a href="#errores">Errores</a> ·
     <a href="#llm-notes">Notas para LLM</a>
   </p>
@@ -271,6 +272,103 @@ Variables entorno sugeridas:
 ENVIRONMENT=production
 PORT=<auto>
 ```
+
+---
+
+## <a id="debugging"></a>Debugging y Logs
+
+### Sistema de Logging Detallado
+
+La API incluye logging extensivo para facilitar el debugging:
+
+- 📨 **Request logs**: Método, URL, origin, headers
+- 🎯 **Processing logs**: Pasos de procesamiento OCR
+- 📤 **Response logs**: Status codes, headers
+- ❌ **Error logs**: Excepciones con traceback completo
+
+### Ver Logs en Railway
+
+**Opción 1: Dashboard Web**
+1. Ve a [railway.app](https://railway.app)
+2. Selecciona tu proyecto
+3. Click en "Deployments" → Deployment activo → "Logs"
+
+**Opción 2: Railway CLI (Recomendado)**
+```bash
+# Instalar CLI
+npm i -g @railway/cli
+
+# Login y link
+railway login
+railway link
+
+# Ver logs en tiempo real
+railway logs --follow
+
+# Buscar errores
+railway logs | grep "❌"
+railway logs | grep "CORS"
+```
+
+### Ejemplo de Logs
+
+Cuando tu frontend hace una request, verás:
+
+```
+🚀 BINGO OCR API STARTING
+  CORS Origins: ['http://localhost:3000', 'https://tu-frontend.vercel.app']
+✅ API READY TO ACCEPT REQUESTS
+
+📨 [20251106123045] ===== INCOMING REQUEST =====
+  Method: POST
+  URL: /process
+  Origin: https://tu-frontend.vercel.app
+  Content-Type: multipart/form-data
+
+🎯 [20251106123045] ===== PROCESSING REQUEST =====
+  Filename: carton.png
+  Grid size: 5x5
+💾 File saved successfully. Size: 245678 bytes
+🔄 Starting OCR processing...
+✅ OCR processing completed successfully
+
+📤 [20251106123045] ===== RESPONSE =====
+  Status: 200
+```
+
+### Variables de Entorno para Debugging
+
+Configura en Railway Dashboard → Variables:
+
+```env
+# Requerido para CORS
+FRONTEND_URL=https://tu-frontend.vercel.app
+
+# Opcional
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+```
+
+### Test Local con Logs
+
+```bash
+# Ejecutar API
+python -m uvicorn src.api:app --reload --port 8000
+
+# En otra terminal, ejecutar tests
+python test_logs.py
+```
+
+### Problemas Comunes
+
+| Síntoma | Log que verás | Solución |
+|---------|---------------|----------|
+| CORS error | `Origin: NO ORIGIN` | Agregar `FRONTEND_URL` en Railway |
+| Tesseract error | `❌ Tesseract no encontrado` | Verificar `nixpacks.toml` |
+| Conexión rechazada | No aparece `📨 INCOMING REQUEST` | Verificar URL en frontend |
+| 500 error | `❌ Unexpected error` + traceback | Revisar logs completos |
+
+📖 **Guía completa**: Ver [`DEBUGGING.md`](DEBUGGING.md) para instrucciones detalladas.
 
 ---
 
